@@ -6,7 +6,11 @@
     "inlineSources": true,
     "removeComments": false,
     "preserveConstEnums": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "jsx": "react",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "exclude": ["node_modules", "dist", "types", "src/**/*.test.ts", "src/**/*.spec.ts"]
 }
