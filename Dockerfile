@@ -3,7 +3,7 @@ FROM node:20-alpine
 RUN apk add --no-cache jemalloc python3 py3-pip
 ENV LD_PRELOAD=/usr/lib/libjemalloc.so.2
 
-ARG NODE_MAX_OLD_SPACE_SIZE=1024
+ARG NODE_MAX_OLD_SPACE_SIZE=4096
 
 WORKDIR /app
 RUN mkdir -p /app && chown node:node /app
