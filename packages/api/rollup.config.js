@@ -19,6 +19,7 @@ const plugins = [
   resolve({
     preferBuiltins: true,
     skipSelf: true,
+    extensions: ['.js', '.ts', '.tsx'],
   }),
   replace({
     __IS_DEV__: isDevelopment,
