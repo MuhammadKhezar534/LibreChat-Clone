@@ -26,7 +26,7 @@ export * from './flow/manager';
 /* Middleware */
 export * from './middleware';
 /* Memory */
-export * from './memory/index.ts';
+export * from './memory/index';
 /* Agents */
 export * from './agents';
 /* Prompts */
