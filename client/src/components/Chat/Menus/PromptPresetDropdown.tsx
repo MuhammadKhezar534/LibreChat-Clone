@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { FileText, ChevronDown } from 'lucide-react';
 import { TooltipAnchor } from '@librechat/client';
 import { EModelEndpoint } from 'librechat-data-provider';
@@ -20,7 +20,6 @@ const PromptPresetDropdown: FC<PromptPresetDropdownProps> = ({ startupConfig }) 
   const localize = useLocalize();
   const { conversation } = useChatContext();
   const { setOption } = useSetIndexOptions();
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const presets = useMemo(
     () => startupConfig?.promptPresets?.filter((p) => p?.label && p?.prompt) ?? [],
@@ -28,7 +27,18 @@ const PromptPresetDropdown: FC<PromptPresetDropdownProps> = ({ startupConfig }) 
   );
 
   const isBedrock = conversation?.endpoint === EModelEndpoint.bedrock;
+  const currentPrompt = isBedrock ? conversation?.system : conversation?.promptPrefix;
   const setSystemPrompt = setOption(isBedrock ? 'system' : 'promptPrefix');
+
+  // Show preset name by matching current conversation prompt to a preset (so it persists across reload/navigation)
+  const selectedIndex = useMemo(() => {
+    const prompt = typeof currentPrompt === 'string' ? currentPrompt.trim() : '';
+    if (!prompt) {
+      return null;
+    }
+    const idx = presets.findIndex((p) => p.prompt.trim() === prompt);
+    return idx >= 0 ? idx : null;
+  }, [currentPrompt, presets]);
 
   const onSelect = useCallback(
     (index: number) => {
@@ -36,15 +46,15 @@ const PromptPresetDropdown: FC<PromptPresetDropdownProps> = ({ startupConfig }) 
       if (!preset) {
         return;
       }
-      setSelectedIndex(index);
       setSystemPrompt(preset.prompt);
     },
     [presets, setSystemPrompt],
   );
 
-  const displayLabel = selectedIndex != null && presets[selectedIndex]
-    ? presets[selectedIndex].label
-    : localize('com_endpoint_prompt_preset');
+  const displayLabel =
+    selectedIndex != null && presets[selectedIndex]
+      ? presets[selectedIndex].label
+      : localize('com_endpoint_prompt_preset');
 
   const trigger = (
     <TooltipAnchor
@@ -53,11 +63,14 @@ const PromptPresetDropdown: FC<PromptPresetDropdownProps> = ({ startupConfig }) 
       render={
         <button
           type="button"
-          className="my-1 flex h-10 min-w-0 max-w-[200px] items-center justify-center gap-2 rounded-xl border border-border-light bg-presentation px-3 py-2 text-sm text-text-primary hover:bg-surface-active-alt"
+          className="my-1 flex h-10 min-w-[140px] max-w-[280px] items-center justify-center gap-2 rounded-xl border border-border-light bg-presentation px-3 py-2 text-sm text-text-primary hover:bg-surface-active-alt"
           aria-label={displayLabel}
+          title={displayLabel}
         >
           <FileText className="icon-sm flex-shrink-0" aria-hidden="true" />
-          <span className="min-w-0 flex-1 truncate text-left">{displayLabel}</span>
+          <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">
+            {displayLabel}
+          </span>
           <ChevronDown className="icon-sm flex-shrink-0 opacity-75" aria-hidden="true" />
         </button>
       }
@@ -69,8 +82,9 @@ const PromptPresetDropdown: FC<PromptPresetDropdownProps> = ({ startupConfig }) 
   }
 
   return (
-    <div className="relative flex w-full min-w-0 max-w-[200px] flex-col items-center gap-2">
+    <div className="relative flex w-full min-w-[140px] max-w-[280px] flex-col items-center gap-2">
       <CustomMenu
+        placement="bottom"
         values={{ promptPreset: selectedIndex != null ? String(selectedIndex) : '' }}
         onValuesChange={(values) => {
           const v = values.promptPreset;
