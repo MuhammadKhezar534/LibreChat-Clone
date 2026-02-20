@@ -42,7 +42,14 @@ export default function Header() {
     permission: Permissions.USE,
   });
 
+  const hasPromptAccess = useHasAccess({
+    permissionType: PermissionTypes.PROMPTS,
+    permission: Permissions.USE,
+  });
+
   const isSmallScreen = useMediaQuery('(max-width: 768px)');
+  const showPromptPresetDropdown =
+    (startupConfig as StartupConfigWithPresets)?.promptPresets?.length || hasPromptAccess;
 
   return (
     <div className="via-presentation/70 md:from-presentation/80 md:via-presentation/50 2xl:from-presentation/0 absolute top-0 z-10 flex h-14 w-full items-center justify-between bg-gradient-to-b from-presentation to-transparent p-2 font-semibold text-text-primary 2xl:via-transparent">
@@ -72,7 +79,7 @@ export default function Header() {
               )}
             >
               <ModelSelector startupConfig={startupConfig} />
-              {(startupConfig as StartupConfigWithPresets)?.promptPresets?.length ? (
+              {showPromptPresetDropdown ? (
                 <PromptPresetDropdown startupConfig={startupConfig as StartupConfigWithPresets} />
               ) : null}
               {/* {interfaceConfig.presets === true && interfaceConfig.modelSelect && <PresetsMenu />} */}

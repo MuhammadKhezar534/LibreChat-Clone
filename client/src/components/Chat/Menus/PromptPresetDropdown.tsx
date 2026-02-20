@@ -1,12 +1,13 @@
 import React, { useCallback, useMemo } from 'react';
 import { FileText, ChevronDown } from 'lucide-react';
 import { TooltipAnchor } from '@librechat/client';
-import { EModelEndpoint } from 'librechat-data-provider';
+import { EModelEndpoint, PermissionTypes, Permissions } from 'librechat-data-provider';
 import type { TStartupConfig } from 'librechat-data-provider';
 import type { FC } from 'react';
 import { CustomMenu, CustomMenuItem } from './Endpoints/CustomMenu';
-import { useSetIndexOptions, useLocalize } from '~/hooks';
+import { useSetIndexOptions, useLocalize, useHasAccess } from '~/hooks';
 import { useChatContext } from '~/Providers';
+import { useGetAllPromptGroups } from '~/data-provider';
 
 type StartupConfigWithPresets = TStartupConfig & {
   promptPresets?: Array<{ label: string; prompt: string }>;
@@ -20,10 +21,38 @@ const PromptPresetDropdown: FC<PromptPresetDropdownProps> = ({ startupConfig }) 
   const localize = useLocalize();
   const { conversation } = useChatContext();
   const { setOption } = useSetIndexOptions();
+  const hasPromptAccess = useHasAccess({
+    permissionType: PermissionTypes.PROMPTS,
+    permission: Permissions.USE,
+  });
+  const { data: allPromptGroups = [] } = useGetAllPromptGroups(undefined, {
+    enabled: hasPromptAccess,
+  });
 
-  const presets = useMemo(
+  const envPresets = useMemo(
     () => startupConfig?.promptPresets?.filter((p) => p?.label && p?.prompt) ?? [],
     [startupConfig?.promptPresets],
+  );
+
+  const userPresets = useMemo(() => {
+    if (!Array.isArray(allPromptGroups)) {
+      return [];
+    }
+    return allPromptGroups
+      .map((group) => ({
+        _id: group._id,
+        label: group.name ?? '',
+        prompt: (group.productionPrompt?.prompt ?? '').trim(),
+      }))
+      .filter((p) => p.label && p.prompt);
+  }, [allPromptGroups]);
+
+  const presets = useMemo(
+    () => [
+      ...envPresets.map((p) => ({ ...p, _id: undefined as string | undefined })),
+      ...userPresets,
+    ],
+    [envPresets, userPresets],
   );
 
   const isBedrock = conversation?.endpoint === EModelEndpoint.bedrock;
@@ -82,7 +111,7 @@ const PromptPresetDropdown: FC<PromptPresetDropdownProps> = ({ startupConfig }) 
   }
 
   return (
-    <div className="relative flex w-full min-w-[140px] max-w-[280px] flex-col items-center gap-2">
+    <div className="relative flex w-full min-w-[180px] max-w-[280px] flex-col items-center gap-2">
       <CustomMenu
         placement="bottom"
         values={{ promptPreset: selectedIndex != null ? String(selectedIndex) : '' }}
@@ -99,7 +128,7 @@ const PromptPresetDropdown: FC<PromptPresetDropdownProps> = ({ startupConfig }) 
       >
         {presets.map((preset, index) => (
           <CustomMenuItem
-            key={index}
+            key={preset._id ?? `env-${index}`}
             name="promptPreset"
             value={String(index)}
           >

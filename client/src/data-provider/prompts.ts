@@ -201,6 +201,7 @@ export const useDeletePrompt = (
           [QueryKeys.prompts, variables.groupId],
           (oldData?: t.TPrompt[]) => {
             const prompts = oldData ? oldData.filter((prompt) => prompt._id !== variables._id) : [];
+            let updatedGroup: t.TPromptGroup | undefined;
             queryClient.setQueryData<t.TPromptGroup>(
               [QueryKeys.promptGroup, variables.groupId],
               (data) => {
@@ -208,11 +209,16 @@ export const useDeletePrompt = (
                   return data;
                 }
                 if (data.productionId === variables._id) {
-                  data.productionId = prompts[0]._id;
-                  data.productionPrompt = prompts[0];
+                  data.productionId = prompts[0]?._id;
+                  data.productionPrompt = prompts[0] ?? undefined;
+                  updatedGroup = { ...data };
                 }
+                return data;
               },
             );
+            if (updatedGroup?._id) {
+              updateGroupInAll(queryClient, { ...updatedGroup, _id: updatedGroup._id });
+            }
             return prompts;
           },
         );
